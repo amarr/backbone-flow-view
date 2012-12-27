@@ -162,6 +162,8 @@ SOFTWARE.
         },
         
         /**
+         * TODO: Route should be /:event/:from/:to(/:args) in Backbone 0.9.9
+         *
          * @method initializeRouter
          */
         initializeRouter : function() {
@@ -264,34 +266,68 @@ SOFTWARE.
          * @method onStateChangeSuccess
          */
         onStateChangeSuccess : function(stateName, viewObj) {
-            _.each(this.getRelevantEvents(stateName), function(event) {
+            var relevantEvents = [];
+
+            // Remove all flow events from the viewObj first incase it is 
+            // being re-used across multiple states.
+            _.each(this.flowEvents, function(event) {
+                viewObj.off(event.name);
+
+                // Remember this event if it is actually relevant so that 
+                // we can more efficiently re-add the listener later 
+                // without looking at the whole event list again.
+                if(this.isRelevantEvent(event)) {
+                    relevantEvents.push(event);
+                }
+            }, this);
+
+            _.each(relevantEvents, function(event) {
+                // Listen for the viewObj to trigger this event
                 viewObj.on(event.name, function() {
                     viewObj.off(event.name); // TODO: This is not needed in Backbone 0.9.9 - use once() to bind instead
 
                     this.invokeEvent(event.name, !this.browserIsNavigating, arguments);
                 }, this);
-                
             }, this);
+        },
+
+        /**
+         * An event is relevant if it can be invoked from the given (or current 
+         * if not given) state.
+         *
+         * 'from' contains this state name or wildcard.
+         * 
+         * @method isRelevantEvent
+         * @param {Object} event
+         *  @param {String} event.name
+         *  @param {String} event.from
+         *  @param {String} event.to
+         * @param {String} [state] Current state if not provided
+         */
+        isRelevantEvent : function(event, state) {
+            state = state || this.current;
+
+            var froms = _.isArray(event.from) ? event.from : [event.from];
+                
+            for(var i = 0, l = froms.length; i < l; i++) {
+                if(froms[i] == state || froms[i] == this.WILDCARD) {
+                    return true;
+                }
+            }
+            
+            return false;
         },
         
         /**
-         * Find all events where 'from' contains this state name or wildcard.
+         * See: isRelevantEvent()
          * 
          * @method getRelevantEvents
+         * @param {String} state
          * @return {Array} events
          */
-        getRelevantEvents : function(stateName) {
+        getRelevantEvents : function(state) {
             var relevantEvents = _.filter(this.flowEvents, function(event) {
-                var froms = _.isArray(event.from) ? event.from : [event.from];
-                
-                for(var i = 0, l = froms.length; i < l; i++) {
-                    if(froms[i] == stateName || froms[i] == this.WILDCARD) {
-                        return true;
-                    }
-                }
-                
-                return false;
-                
+                return this.isRelevantEvent(event, state);
             }, this);
             
             return relevantEvents;
