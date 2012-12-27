@@ -264,8 +264,10 @@ SOFTWARE.
          * @method onStateChangeSuccess
          */
         onStateChangeSuccess : function(stateName, viewObj) {
-            _.each(this.getRelevantEvents(stateName), function(event, index, events) {
+            _.each(this.getRelevantEvents(stateName), function(event) {
                 viewObj.on(event.name, function() {
+                    viewObj.off(event.name); // TODO: This is not needed in Backbone 0.9.9 - use once() to bind instead
+
                     this.invokeEvent(event.name, !this.browserIsNavigating, arguments);
                 }, this);
                 
