@@ -139,9 +139,7 @@ SOFTWARE.
             this.WILDCARD = this.StateMachine.WILDCARD;
             this.ASYNC = this.StateMachine.ASYNC;
             
-            if(options.initialState) {
-                this.initialState = options.initialState;
-            }
+            _.extend(this, options);
             
             this.initializeStateMachine()
             
@@ -181,8 +179,6 @@ SOFTWARE.
                 routes : routes,
                 
                 callbackArgs : function(event, from, to, args) {
-                    console.log('nav');
-                    
                     var eventName = event;
                     this.flow.setCurrentState(from);
                     
@@ -192,8 +188,6 @@ SOFTWARE.
                 },
                 
                 callbackNoArgs : function(event, from, to) {
-                    console.log('nav noargs');
-                    
                     var eventName = event;
                     this.flow.setCurrentState(from);
                     
@@ -228,9 +222,7 @@ SOFTWARE.
         onChangeState : function(event, from, to, isBrowserNavigating) {
             // If there are custom arguments, pull them into the array
             var args = arguments.length > 4 ? _.rest(Array.prototype.slice.call(arguments), 4) : [];
-            
-            console.warn('onchangestate');
-            
+
             var route = function(that) {
                 if(args.length == 0) {
                     return that.name + '/' + event + '/' + from + '/' + to;
@@ -249,19 +241,17 @@ SOFTWARE.
                 
                 this.doStateChange(event, from, to, isBrowserNavigating);
             }
-            
-            console.warn('/onchangestate')
         },
         
         /**
          * Should be overridden to perform your application specific transition 
-         * action. For example, if states represent screen's in your app, you 
+         * action. For example, if states represent screens in your app, you 
          * would perform something like app.toScreen(to) in this method.
          *
          * @method doStateChange
          */
         doStateChange : function(event, from, to, isBrowserNavigating) {
-            /* NO-OP */
+            this.onStateChangeSuccess(to, this);
         },
         
         /**
@@ -317,7 +307,7 @@ SOFTWARE.
             
             argArray.unshift(isBrowserNavigating);
             
-            // calls onchangestate followed by custom flow callbacks
+            // calls onChangeState followed by custom flow callbacks
             this[this.clean(eventName)].apply(this, argArray);
         },
         
