@@ -148,6 +148,7 @@ SOFTWARE.
         
         /**
          * @method initializeStateMachine
+         * @private
          */
         initializeStateMachine : function() {
             this.StateMachine.create({
@@ -165,6 +166,7 @@ SOFTWARE.
          * TODO: Route should be /:event/:from/:to(/:args) in Backbone 0.9.9
          *
          * @method initializeRouter
+         * @private
          */
         initializeRouter : function() {
             if(!this.allowBrowserNavigation) {
@@ -203,6 +205,8 @@ SOFTWARE.
         /**
          * See: Backbone.View.render - Simply starts the flow.
          *
+         * Simply calls startFlow()
+         *
          * You may wish to do something more interesting here.
          *
          * @method render
@@ -215,8 +219,8 @@ SOFTWARE.
          * This should be called once you wish to transition the flow into the 
          * 'initialState'.
          * 
-         * A common place to do so would be in a render() method as you will 
-         * immediately be asked to 'doStateChange' after this is called.
+         * The default render() method calls this automatically. You only need 
+         * to call this if you are overriding the default reender() method.
          *
          * @method startFlow
          */
@@ -230,9 +234,10 @@ SOFTWARE.
          * When any state changes we want to record the change in the browser 
          * history and cause the state to change to the 'to' state.
          *
-         * @method onchangestate
+         * @method onChangeStateInternal
+         * @private
          */
-        onChangeState : function(event, from, to, isBrowserNavigating) {
+        onChangeStateInternal : function(event, from, to, isBrowserNavigating) {
             // If there are custom arguments, pull them into the array
             var args = arguments.length > 4 ? _.rest(Array.prototype.slice.call(arguments), 4) : [];
 
@@ -251,32 +256,25 @@ SOFTWARE.
                 if(this.allowBrowserNavigation && !isBrowserNavigating) {
                     this.router.navigate(route(this));
                 }
-                
-                this.doStateChange(event, from, to, isBrowserNavigating);
             }
         },
-        
+
         /**
-         * Should be overridden to perform your application specific transition 
-         * action. For example, if states represent screens in your app, you 
-         * would perform something like app.toScreen(to) in this method.
-         *
-         * @method doStateChange
-         */
-        doStateChange : function(event, from, to, isBrowserNavigating) {
-            this.onStateChangeSuccess(this);
-        },
-        
-        /**
-         * When a state is loaded, we gather all events relevant to the state 
+         * When an event completes, we gather all events relevant to the state 
          * and bind a listener to them.
          * 
          * The purpose of the listener is to translate the application event into 
          * a state event and invoke it.
+         * 
+         * This method is always invoked unless the transition is async to ensure 
+         * we always stay hooked up to the active view.
          *
-         * @method onStateChangeSuccess
+         * @method onEnd
+         * @private
          */
-        onStateChangeSuccess : function(viewObj) {
+        onEnd : function(event, from, to, isBrowserNavigating) {
+            var viewObj = this.getActiveView();
+
             var relevantEvents = [];
 
             // Remove all flow events from the viewObj first incase it is 
@@ -330,22 +328,9 @@ SOFTWARE.
         },
         
         /**
-         * See: isRelevantEvent()
-         * 
-         * @method getRelevantEvents
-         * @param {String} state
-         * @return {Array} events
-         */
-        getRelevantEvents : function(state) {
-            var relevantEvents = _.filter(this.flowEvents, function(event) {
-                return this.isRelevantEvent(event, state);
-            }, this);
-            
-            return relevantEvents;
-        },
-        
-        /**
-         * Trigger the given event with any corresponding arguments
+         * Trigger the given event with any corresponding arguments.
+         *
+         * All event onvocations should go through this method.
          * 
          * @method invokeEvent
          */
@@ -358,6 +343,18 @@ SOFTWARE.
             
             // calls onChangeState followed by custom flow callbacks
             this[this.clean(eventName)].apply(this, argArray);
+        },
+
+        /**
+         * This method should be overridden if the flow events will be 
+         * triggered by a view other than the FlowView. Event listeners relevant 
+         * to the current state will be attached to the returned view.
+         * 
+         * @method getActiveView
+         * @return {View} The view currently triggering events
+         */
+        getActiveView : function() {
+            return this;
         },
         
         /**
