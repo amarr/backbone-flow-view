@@ -199,6 +199,17 @@ SOFTWARE.
             
             this.router = new Router();
         },
+
+        /**
+         * See: Backbone.View.render - Simply starts the flow.
+         *
+         * You may wish to do something more interesting here.
+         *
+         * @method render
+         */
+        render : function() {
+            this.startFlow();
+        },
         
         /**
          * This should be called once you wish to transition the flow into the 
@@ -211,7 +222,7 @@ SOFTWARE.
          */
         startFlow : function() {
             if(this.is('none')) {
-                this[this.initialEvent].call(this);
+                this.invokeEvent(this.initialEvent, !this.browserIsNavigating);
             }
         },
         
@@ -253,7 +264,7 @@ SOFTWARE.
          * @method doStateChange
          */
         doStateChange : function(event, from, to, isBrowserNavigating) {
-            this.onStateChangeSuccess(to, this);
+            this.onStateChangeSuccess(this);
         },
         
         /**
@@ -265,7 +276,7 @@ SOFTWARE.
          *
          * @method onStateChangeSuccess
          */
-        onStateChangeSuccess : function(stateName, viewObj) {
+        onStateChangeSuccess : function(viewObj) {
             var relevantEvents = [];
 
             // Remove all flow events from the viewObj first incase it is 

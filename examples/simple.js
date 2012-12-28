@@ -1,5 +1,14 @@
-require(['FlowView'], function(FlowView) {
-    var ScreenView = Backbone.View.extend({
+require.config({
+    paths : {
+        'lib' : '../lib'
+    }
+});
+
+require(['../FlowView'], function(FlowView) {
+    // Create the simple flow object.
+    var flow = new FlowView({
+        el : $('#state').get(0),
+
         events : {
             'click #prev' : 'prev',
             'click #next' : 'next'
@@ -10,19 +19,14 @@ require(['FlowView'], function(FlowView) {
         },
 
         next : function() {
+            console.log('next');
             this.trigger('next');
         },
 
         update : function(state) {
             this.$el.children('#content').text(state);
-        }
-    });
+        },
 
-    var screen = new ScreenView({
-        el : $('#state').get(0)
-    });
-
-    var flow = new FlowView({
         name : 'MyFlow',
 
         initialState : 'State1',
@@ -36,23 +40,22 @@ require(['FlowView'], function(FlowView) {
 
         onEnterState1 : function(event, from, to) {
             console.log('Entered state1');
+            this.update(to);
         },
 
         onEnterState2 : function(event, from, to) {
             console.log('Entered state2');
+            this.update(to);
         },
 
         onEnterState3 : function(event, from, to) {
             console.log('Entered state3');
+            this.update(to);
         },
 
         onEnterState4 : function(event, from, to) {
             console.log('Entered state4');
-        },
-
-        doStateChange : function(event, from, to, isBrowserNavigating) {
-            screen.update(to);
-            this.onStateChangeSuccess(screen);
+            this.update(to);
         }
     });
 
