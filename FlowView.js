@@ -275,6 +275,10 @@ SOFTWARE.
         onEnd : function(event, from, to, isBrowserNavigating) {
             var viewObj = this.getActiveView();
 
+            if(!viewObj) {
+                return;
+            }
+
             var relevantEvents = [];
 
             // Remove all flow events from the viewObj first incase it is 
