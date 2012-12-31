@@ -246,23 +246,23 @@ require(['../FlowView'], function(FlowView) {
 		flow.render();
 		
 		testEventName = ['Two','Multi'];
-		flow.One();
+		flow.__One__();
 
 		testEventName = ['Multi'];
-		flow.Two();
+		flow.__Two__();
 
 		// Check that nothing happens when we try a bad transition
 		testEventName = ['Multi'];
 		try {
-			flow.One();
+			flow.__One__();
 		}
 		catch(e) {}
 
 		testEventName = ['End'];
-		flow.Multi();
+		flow.__Multi__();
 
 		testEventName = [];
-		flow.End();
+		flow.__End__();
 
 		// Custom getActiveView() methods may not always return a view
 		flow.getActiveView = function() {
@@ -300,23 +300,23 @@ require(['../FlowView'], function(FlowView) {
 		flow.render();
 		
 		testEventName = ['Two','Multi'];
-		flow.One();
+		flow.__One__();
 
 		testEventName = ['Two','Multi'];
-		flow.Two();
+		flow.__Two__();
 
 		// Check that nothing happens when we try a bad transition
 		testEventName = ['Two','Multi'];
 		try {
-			flow.One();
+			flow.__One__();
 		}
 		catch(e) {}
 
 		testEventName = ['Two','End'];
-		flow.Multi();
+		flow.__Multi__();
 
 		testEventName = ['Two'];
-		flow.End();
+		flow.__End__();
 
 		// Custom getActiveView() methods may not always return a view
 		flow.getActiveView = function() {
@@ -345,7 +345,7 @@ require(['../FlowView'], function(FlowView) {
 
 		flow.startFlow();
 		flow.startFlow();
-		flow.One();
+		flow.__One__();
 		flow.startFlow();
 	});
 });

@@ -356,7 +356,7 @@ SOFTWARE.
             argArray.unshift(isBrowserNavigating);
             
             // calls onChangeState followed by custom flow callbacks
-            this[this.clean(eventName)].apply(this, argArray);
+            this[this.cleanFunc(eventName)].apply(this, argArray);
         },
 
         /**
