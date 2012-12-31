@@ -6,6 +6,57 @@ require.config({
 
 require(['../FlowView'], function(FlowView) {
 
+	test('initialize', function() {
+		expect(2);
+
+		// sanity checks
+		var flow = new FlowView({
+			initialState : 'State1',
+
+			flowEvents : [
+				{name:'One', from:'State1', to:'State2'}
+			],
+
+			initializeStateMachine : function() {
+				ok(true, 'call init FSM');
+			},
+
+			initializeRouter : function() {
+				ok(true, 'call init router');
+			}
+		});
+	});
+
+	test('Router', function() {
+		expect(6);
+		
+		var flow = new FlowView({
+			initialState : 'State1',
+
+			flowEvents : [
+				{name:'One', from:'State1', to:'State2'}
+			]
+		});
+
+		// Simple case
+		flow.invokeEvent = function(eventName, isBrowserNavigating, args) {
+			equal(eventName, 'One', 'eventName');
+			equal(isBrowserNavigating, true, 'browser nav');
+			deepEqual(args, ['v1', 'v2'], 'simple args');
+		};
+
+		flow.router.callbackArgs('One', 'State1', 'State2', '%5B%22v1%22%2C%22v2%22%5D');
+
+		// Args with object case
+		flow.invokeEvent = function(eventName, isBrowserNavigating, args) {
+			equal(eventName, 'One', 'eventName');
+			equal(isBrowserNavigating, true, 'browser nav');
+			deepEqual(args, ['v1', {sp1:'sv1'}, 'v2'], 'simple args');
+		};
+
+		flow.router.callbackArgs('One', 'State1', 'State2', '%5B%22v1%22%2C%7B%22sp1%22%3A%22sv1%22%7D%2C%22v2%22%5D');
+	});
+
 	test('isRelevantEvent', function() {
 		var flow = new FlowView({
 			initialState : 'State1',
@@ -115,6 +166,167 @@ require(['../FlowView'], function(FlowView) {
 		flow.invokeEvent('Four:Success', false);
 	});
 
+	test('createFlowRoute', function() {
+		var flow = new FlowView({
+			initialState : 'State1',
+
+			flowEvents : [
+				{name:'One', from:'State1', to:'State2'}
+			]
+		});
+
+		var route = flow.createFlowRoute('evt', 'fr', 'to', []);
+
+		equal(route, 'UnnamedFlow/evt/fr/to');
+
+		var route2 = flow.createFlowRoute('evt2', 'fr2', 'to2', ['myarg']);
+
+		equal(route2, 'UnnamedFlow/evt2/fr2/to2/%5B%22myarg%22%5D');
+	});
+
+	test('_onChangeStateInternal', function() {
+		var flow = new FlowView({
+			initialState : 'State1',
+
+			flowEvents : [
+				{name:'One', from:'State1', to:'State2'},
+				{name:'Two', from:'State2', to:'State3'}
+			]
+		});
+
+		// We expect only to call navigate if not browser navigating 
+		// and from is not same as to.
+		expect(2);
+
+		flow.router.navigate = function(route) {
+			equal(route, flow.createFlowRoute('evt', 'fr', 'to', []), 'navigate');
+		}
+
+		// This one should work
+		flow._onChangeStateInternal('evt', 'fr', 'to', false);
+
+		// This should not
+		flow._onChangeStateInternal('evt', 'fr', 'to', true);
+
+		// And this should not
+		flow._onChangeStateInternal('evt', 'fr', 'fr', false);
+
+		// Ensure we properly pass additional args
+		flow.router.navigate = function(route) {
+			equal(route, flow.createFlowRoute('evt', 'fr', 'to', ['myarg']), 'navigate with additional arg');
+		}
+
+		flow._onChangeStateInternal('evt', 'fr', 'to', false, 'myarg');
+	});
+
+	test('_onEnd', function() {
+		var testEventName = null;
+		var flow = new FlowView({
+			initialState : 'State1',
+
+			flowEvents : [
+				{name:'One', from:'State1', to:'State2'},
+				{name:'Two', from:'State2', to:'State3'},
+				{name:'Multi', from:['State2','State3'], to:'State4'},
+				{name:'End', from:'State4', to:'State5'}
+			]
+		});
+
+		// We verify by checking the Backbone.Events _callbacks object keys.
+		// The expectation is that only relevant event names will show up in the keys.
+		// This means the old ones were removed and the new ones were added.
+		var _onEnd = flow._onEnd;
+		flow._onEnd = function() {
+			_onEnd.apply(flow, arguments);
+
+			deepEqual(_.keys(flow._callbacks), testEventName, testEventName);
+		};
+
+		testEventName = ['One'];
+		flow.render();
+		
+		testEventName = ['Two','Multi'];
+		flow.One();
+
+		testEventName = ['Multi'];
+		flow.Two();
+
+		// Check that nothing happens when we try a bad transition
+		testEventName = ['Multi'];
+		try {
+			flow.One();
+		}
+		catch(e) {}
+
+		testEventName = ['End'];
+		flow.Multi();
+
+		testEventName = [];
+		flow.End();
+
+		// Custom getActiveView() methods may not always return a view
+		flow.getActiveView = function() {
+			return null;
+		};
+
+		_onEnd.call(flow, 'a', 'b');
+		ok(true, 'Passed null view test');
+	});
+
+	test('_onEnd with wildcard', function() {
+		var testEventName = null;
+		var flow = new FlowView({
+			initialState : 'State1',
+
+			flowEvents : [
+				{name:'One', from:'State1', to:'State2'},
+				{name:'Two', from:'*', to:'State3'},
+				{name:'Multi', from:['State2','State3'], to:'State4'},
+				{name:'End', from:'State4', to:'State5'}
+			]
+		});
+
+		// We verify by checking the Backbone.Events _callbacks object keys.
+		// The expectation is that only relevant event names will show up in the keys.
+		// This means the old ones were removed and the new ones were added.
+		var _onEnd = flow._onEnd;
+		flow._onEnd = function() {
+			_onEnd.apply(flow, arguments);
+
+			deepEqual(_.keys(flow._callbacks), testEventName, testEventName);
+		};
+
+		testEventName = ['One','Two'];
+		flow.render();
+		
+		testEventName = ['Two','Multi'];
+		flow.One();
+
+		testEventName = ['Two','Multi'];
+		flow.Two();
+
+		// Check that nothing happens when we try a bad transition
+		testEventName = ['Two','Multi'];
+		try {
+			flow.One();
+		}
+		catch(e) {}
+
+		testEventName = ['Two','End'];
+		flow.Multi();
+
+		testEventName = ['Two'];
+		flow.End();
+
+		// Custom getActiveView() methods may not always return a view
+		flow.getActiveView = function() {
+			return null;
+		};
+
+		_onEnd.call(flow, 'a', 'b');
+		ok(true, 'Passed null view test');
+	});
+
 	test('startFlow', function() {
 		var flow = new FlowView({
 			initialState : 'State1',
@@ -124,7 +336,7 @@ require(['../FlowView'], function(FlowView) {
 			],
 
 			onStart : function() {
-				ok(true, true);
+				ok(true, 'started');
 			}
 		});
 

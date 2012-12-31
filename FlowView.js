@@ -130,7 +130,7 @@ SOFTWARE.
         /**
          * @method initialize
          * @param {Object} options
-         *  @param {String} [options.initialState
+         *  @param {String} [options.initialState]
          */
         initialize : function(options) {
             options = options || {};
@@ -229,6 +229,26 @@ SOFTWARE.
                 this.invokeEvent(this.initialEvent, !this.browserIsNavigating);
             }
         },
+
+        /**
+         * @method createFlowRoute
+         * @param  {String} event 
+         * @param  {String} from  
+         * @param  {String} to    
+         * @param  {Array} [args]  
+         * @return {String}       Ready to use URI fragment
+         * @private
+         */
+        createFlowRoute : function(event, from, to, args) {
+            if(args.length == 0) {
+                return this.name + '/' + event + '/' + from + '/' + to;
+            }
+            else {
+                var argsStr = encodeURIComponent(JSON.stringify(args));
+                
+                return this.name + '/' + event + '/' + from + '/' + to + '/' + argsStr;
+            }
+        },
         
         /**
          * When any state changes we want to record the change in the browser 
@@ -237,24 +257,14 @@ SOFTWARE.
          * @method onChangeStateInternal
          * @private
          */
-        onChangeStateInternal : function(event, from, to, isBrowserNavigating) {
+        _onChangeStateInternal : function(event, from, to, isBrowserNavigating) {
             // If there are custom arguments, pull them into the array
             var args = arguments.length > 4 ? _.rest(Array.prototype.slice.call(arguments), 4) : [];
-
-            var route = function(that) {
-                if(args.length == 0) {
-                    return that.name + '/' + event + '/' + from + '/' + to;
-                }
-                else {
-                    var argsStr = encodeURIComponent(JSON.stringify(args));
-                    
-                    return that.name + '/' + event + '/' + from + '/' + to + '/' + argsStr;
-                }
-            };
             
             if(from != to) {
                 if(this.allowBrowserNavigation && !isBrowserNavigating) {
-                    this.router.navigate(route(this));
+                    var route = this.createFlowRoute(event, from, to, args);
+                    this.router.navigate(route);
                 }
             }
         },
@@ -272,7 +282,7 @@ SOFTWARE.
          * @method onEnd
          * @private
          */
-        onEnd : function(event, from, to, isBrowserNavigating) {
+        _onEnd : function(event, from, to, isBrowserNavigating) {
             var viewObj = this.getActiveView();
 
             if(!viewObj) {
