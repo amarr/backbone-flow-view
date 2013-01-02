@@ -31,7 +31,7 @@ require(['../FlowView'], function(FlowView) {
         el : $('#state2').get(0),
 
         render : function(content) {
-            this.$el.find('#content').text(content);
+            this.$el.find('.content').text(content);
             this.$el.show();
         }
     });
