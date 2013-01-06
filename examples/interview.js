@@ -107,7 +107,8 @@ require(['../FlowView'], function(FlowView) {
         events : {
             'click .previous a' : 'prev',
             'click .next a' : 'next',
-            'keypress input[type="text"]' : 'next'
+            'keypress input[type="text"]' : 'next',
+            'submit form' : 'next'
         },
 
         prev : function(e) {
@@ -121,7 +122,16 @@ require(['../FlowView'], function(FlowView) {
         },
 
         next : function(e) {
-            if(e.type == 'keypress') {
+            if(e.type == 'submit') {
+                e.preventDefault();
+                    if(this.activeView.$el.find('.next').hasClass('disabled')) {
+                        return;
+                    }
+                    this.activeView.doNext();
+
+                    return false;
+            }
+            else if(e.type == 'keypress') {
                 if(e.keyCode == 13) {
                     e.preventDefault();
                     if(this.activeView.$el.find('.next').hasClass('disabled')) {
